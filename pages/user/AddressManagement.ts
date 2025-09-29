@@ -44,7 +44,7 @@ export class AddressManagement {
         await this.page.click(this.addNewAddressButton);
     }
 
-    async addressFormFill(testDataPath: string, worksheet: number, rowIndex: number) {
+    async addressFormFill(testDataPath: string, worksheet: string, rowIndex: number) {
         // Load data from Excel - this returns a flat array of objects
         const dataArray = loadXlsxData(testDataPath, worksheet);
 

@@ -23,7 +23,7 @@ export class UserLogin {
         await this.page.goto(this.loginPageUrl);
     }
 
-    async login(testDataPath: string, email: string, worksheet: number): Promise<boolean> {
+    async login(testDataPath: string, email: string, worksheet: string): Promise<boolean> {
         try {
             // xlsx data loader
             const data = loadXlsxData(testDataPath, worksheet);

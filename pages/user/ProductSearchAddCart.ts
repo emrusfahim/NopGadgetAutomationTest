@@ -25,7 +25,7 @@ export class ProductSearch {
         await this.page.goto(this.searchURL);
     }
 
-    async searchProduct(testDataPath: string, worksheet: number): Promise<boolean> {
+    async searchProduct(testDataPath: string, worksheet: string): Promise<boolean> {
         const data = loadXlsxData(testDataPath, worksheet);
         // console.log("Data from Excel: ", data);
         // console.log("Price: ", data[0].Price);

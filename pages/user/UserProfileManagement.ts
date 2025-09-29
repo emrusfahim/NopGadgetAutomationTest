@@ -24,7 +24,7 @@ export class UserProfileManagement {
         await this.page.goto(this.customerInfoUrl);
     }
 
-    async updateCustomerInfo(testDataPath: string, email: string, worksheet: number) {
+    async updateCustomerInfo(testDataPath: string, email: string, worksheet: string) {
         const customerDataList = loadXlsxData(testDataPath, worksheet);
         // Find the customer data matching the provided email
         const customerData = customerDataList.find(data => data.Email === email);

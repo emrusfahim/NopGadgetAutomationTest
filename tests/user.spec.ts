@@ -4,7 +4,8 @@ import { UserLogin } from '../pages/user/UserLogin';
 import { UserProfileManagement } from '../pages/user/UserProfileManagement';
 import { AddressManagement } from '../pages/user/AddressManagement';
 import { ChangePasswordPage } from '../pages/user/ChangePassword';
-import { ProductSearch } from '../pages/user/ProductSearchAndCart';
+import { ProductSearch } from '../pages/user/ProductSearchAddCart';
+import { ProductCart } from '../pages/user/ProductCart';
 
 test.skip('Landing Page', async ({ page }) => {
   // Navigate to the baseURL
@@ -16,8 +17,10 @@ test.skip('Landing Page', async ({ page }) => {
 
 test.skip('Login to user account', async ({ page }) => {
   const testDataPath = 'testData/testData_user.xlsx';
+    const worksheet = 'Users';
+  //const worksheet = 0;
   const email = 'sakib75@gmail.com';
-  const worksheet = 0;
+
 
   // Create an instance of UserLogin
   const userLogin = new UserLogin(page);
@@ -32,8 +35,9 @@ test.skip('Login to user account', async ({ page }) => {
 
 test.skip('Update customer Profile info', async ({ page }) => {
   const testDataPath = 'testData/testData_user.xlsx';
+  const worksheet = 'Users';
   const email = 'sakib75@gmail.com';
-  const worksheet = 0;
+  // const worksheet = 0;
 
   // // Create an instance of UserLogin
   // const userLogin = new UserLogin(page);
@@ -52,7 +56,8 @@ test.skip('Update customer Profile info', async ({ page }) => {
 
 test.skip('Address management', async ({ page }) => {
   const testDataPath = 'testData/testData_user.xlsx';
-  const worksheet = 3;
+  // const worksheet = 3;
+  const worksheet = 'Addresses';
   const rowIndex = 0; // Change this index to select different rows from the Excel sheet
 
   // Create an instance of AddressManagement
@@ -94,10 +99,10 @@ test.skip('Change password', async ({ page }) => {
   await changePasswordPage.changePassword(oldPassword, newPassword, confirmPassword);
 });
 
-test('Search product', async ({ page }) => {
+test.skip('Search product', async ({ page }) => {
   const testDataPath = 'testData/testData_user.xlsx';
-  // const worksheet = 'Products';
-  const worksheet = 3;
+  const worksheet = 'Products';
+  //const worksheet = 3;
 
   // Create an instance of ProductSearch
   const productSearch = new ProductSearch(page);
@@ -108,4 +113,15 @@ test('Search product', async ({ page }) => {
   const searchResult = await productSearch.searchProduct(testDataPath, worksheet);
   // Validation is done inside the method and result is returned to the calling test function
   expect(searchResult).toBe(true);
+});
+
+test('Product Cart operations', async ({ page }) => { // In progress, not yet complete
+  const testDataPath = 'testData/testData_user.xlsx';
+  const worksheet = 'Products';
+  //const worksheet = 3;
+
+  const productCart = new ProductCart(page);
+
+  await productCart.gotoCartPage();
+  await productCart.verifyProductDetailsFromExcel(testDataPath, worksheet);
 });
