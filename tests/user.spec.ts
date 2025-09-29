@@ -4,6 +4,7 @@ import { UserLogin } from '../pages/user/UserLogin';
 import { UserProfileManagement } from '../pages/user/UserProfileManagement';
 import { AddressManagement } from '../pages/user/AddressManagement';
 import { ChangePasswordPage } from '../pages/user/ChangePassword';
+import { ProductSearch } from '../pages/user/ProductSearch';
 
 test.skip('Landing Page', async ({ page }) => {
   // Navigate to the baseURL
@@ -91,9 +92,14 @@ test.skip('Change password', async ({ page }) => {
 });
 
 test('Search product', async ({ page }) => {
+  const testDataPath = 'testData/testData_user.xlsx';
+  const worksheet = 2;
 
-  const SearchProduct = 'Apple MacBook Pro 13-inch';
+  // Create an instance of ProductSearch
+  const productSearch = new ProductSearch(page);
 
-  // Go to Search product page
-  await page.goto('/');
+  await productSearch.gotoSearchPage();
+
+  // Search for a product
+  await productSearch.searchProduct(testDataPath, worksheet);
 });
