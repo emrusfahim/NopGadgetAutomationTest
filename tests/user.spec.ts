@@ -4,7 +4,7 @@ import { UserLogin } from '../pages/user/UserLogin';
 import { UserProfileManagement } from '../pages/user/UserProfileManagement';
 import { AddressManagement } from '../pages/user/AddressManagement';
 import { ChangePasswordPage } from '../pages/user/ChangePassword';
-import { ProductSearch } from '../pages/user/ProductSearch';
+import { ProductSearch } from '../pages/user/ProductSearchAndCart';
 
 test.skip('Landing Page', async ({ page }) => {
   // Navigate to the baseURL
@@ -73,7 +73,10 @@ test.skip('Address management', async ({ page }) => {
 
   // Note: Skipping delete address test to retain at least one address for future tests
   // Go to address page
-  //await addressManagement.gotoAddressPage();
+  // await addressManagement.gotoAddressPage();
+  // // Delete the address and verify it was deleted
+  // const isAddressDeleted = await addressManagement.deleteAddress();
+  // expect(isAddressDeleted).toBe(true);
 
 });
 
@@ -93,7 +96,8 @@ test.skip('Change password', async ({ page }) => {
 
 test('Search product', async ({ page }) => {
   const testDataPath = 'testData/testData_user.xlsx';
-  const worksheet = 2;
+  // const worksheet = 'Products';
+  const worksheet = 3;
 
   // Create an instance of ProductSearch
   const productSearch = new ProductSearch(page);
@@ -101,5 +105,7 @@ test('Search product', async ({ page }) => {
   await productSearch.gotoSearchPage();
 
   // Search for a product
-  await productSearch.searchProduct(testDataPath, worksheet);
+  const searchResult = await productSearch.searchProduct(testDataPath, worksheet);
+  // Validation is done inside the method and result is returned to the calling test function
+  expect(searchResult).toBe(true);
 });

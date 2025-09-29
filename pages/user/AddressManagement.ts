@@ -137,5 +137,7 @@ export class AddressManagement {
         // Wait for the page to update after deletion
         await this.page.waitForTimeout(3000);
         console.log('Address deleted successfully');
+        
+        return true;
     }
 }
