@@ -1,0 +1,65 @@
+{
+  "cookies": [
+    {
+      "name": ".Nop.Antiforgery",
+      "value": "CfDJ8BeFR2MhiHlOvZSKfPtPtqFo1vZcfDd_ilgpjL7clqId7tgoyLDgztXb_4g-gaT93K-UHG30uautQb1lBAI6LClBQiS9f6yh8LOeAA8MDV0fBwhG_2Ye-gdk_mHQe4rJgvQ36UpTha5RxD-3cZSFaBA",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.726410969.1759043038",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1793629707.414231,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": ".Nop.Authentication",
+      "value": "CfDJ8BeFR2MhiHlOvZSKfPtPtqHmY8UfqQP5LpQVoTzb2eexXJQR6ErPN0f2U7POAtFqiF9AVZeBFCa9vephMBMZ6IK7v_ZZsimxnK3_MdBv9r9y-voOBJ0Bai7Ux44W_QVGRLfEh-fQezfUR4yqe6GikeQggkvNrlqLh7GC5pqXy5jwdRb794z71gRy6aG-d19CA-PDmW-G-2kRZqce7zKN5fcwVOTnP4dAmqMgX6HrL8FMV2NT6BDUHB67PCQW6bPNVKncKYsq9LetpFjUOgqdHIhHJUHliiPfVGCbo_NyhUY0t8v1WS7zdeXVIt5g_ScfBuhRfzNKevoB8zoq-pwp2frKDtMvN5cmxX7_kKn9i6CgKV8liu9bcuCh90Aar-XwHj1rla6NZOth9hYZ0qHA_VhvrmW4ie12duRG5sI6JxDSNK7oayx5Y-ldJRhAGNzsWnGjdhsSW7W2XS3BpzEhy0DJT_TLcZp2uR-4WoQ1ACECtz2H69G5wcIX67UBSkwpdNCH6kIXgpaQXWTXNy00Jnuw31q_NNijT4AAG0Q2stsD27tRY3GYTMhjrVHku1avpjHnpDJbomM73BpipPSXdTc",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1760279308.230425,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_XXXXXXXXXX",
+      "value": "GS2.1.s1759069208$o4$g1$t1759069707$j59$l0$h0",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1793629707.413879,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": ".Nop.Customer",
+      "value": "3bc28fd9-8df1-4f00-ae94-686e3382866a",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1790605708.548176,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": ".Nop.Culture",
+      "value": "c%3Den-US%7Cuic%3Den-US",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1790605708.548292,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
