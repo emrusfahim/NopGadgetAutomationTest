@@ -99,7 +99,7 @@ test.skip('Change password', async ({ page }) => {
   await changePasswordPage.changePassword(oldPassword, newPassword, confirmPassword);
 });
 
-test.skip('Search product', async ({ page }) => {
+test('Search product', async ({ page }) => {
   const testDataPath = 'testData/testData_user.xlsx';
   const worksheet = 'Products';
   //const worksheet = 3;
