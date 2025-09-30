@@ -1,4 +1,15 @@
 
+# Environment variables
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+
+# Storage state files
+storageState.json
+auth.json
+
 # Playwright
 node_modules/
 /test-results/
@@ -6,3 +17,12 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Logs and screenshots
+logs/
+screenshots/
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db

@@ -1,18 +1,113 @@
 {
   "name": "nopgadgetautomationtest",
   "version": "1.0.0",
-  "description": "",
+  "description": "Automated testing suite for NopCommerce Gadget application using Playwright with environment-driven configuration",
   "main": "index.js",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "cross-env HEADLESS=false npx playwright test",
+    "test:debug": "npx playwright test --debug",
+    "test:ui": "npx playwright test --ui",
+    "test:codegen": "npx playwright codegen",
+    "test:report": "npx playwright show-report",
+    "test:install": "npx playwright install",
+    "test:browsers": "npx playwright install --with-deps",
+    
+    "test:dev": "cross-env BASE_URL=http://localhost:88 HEADLESS=false npx playwright test",
+    "test:staging": "cross-env BASE_URL=https://staging.yourapp.com HEADLESS=true npx playwright test",
+    "test:prod": "cross-env BASE_URL=https://yourapp.com HEADLESS=true RETRIES=2 npx playwright test",
+    "test:ci": "cross-env CI=true RETRIES=2 WORKERS=2 HEADLESS=true npx playwright test",
+    
+    "test:smoke": "npx playwright test --grep @smoke",
+    "test:auth": "npx playwright test --grep \"Login|password\"",
+    "test:address": "npx playwright test --grep \"Address\"",
+    "test:product": "npx playwright test --grep \"product|cart\"",
+    "test:search": "npx playwright test --grep \"Search\"",
+    "test:user": "npx playwright test tests/user.spec.ts",
+    "test:login": "npx playwright test --grep \"Login\"",
+    "test:cart": "npx playwright test --grep \"Cart\"",
+    "test:password": "npx playwright test --grep \"password\"",
+    "test:profile": "npx playwright test --grep \"Profile\"",
+    
+    "test:clean": "rimraf test-results playwright-report",
+    "test:list": "npx playwright test --list",
+    "test:trace": "npx playwright show-trace",
+    "test:html-report": "npx playwright show-report",
+    
+    "test:custom-user": "cross-env TEST_EMAIL=%npm_config_email% TEST_PASSWORD=%npm_config_password% npx playwright test",
+    "test:custom-data": "cross-env TEST_DATA_PATH=%npm_config_path% npx playwright test",
+    "test:different-user": "cross-env TEST_EMAIL=different@test.com TEST_PASSWORD=differentpass npx playwright test",
+    
+    "test:chromium": "npx playwright test --project=chromium",
+    "test:firefox": "npx playwright test --project=firefox",
+    "test:webkit": "npx playwright test --project=webkit",
+    "test:chrome": "npx playwright test --project=chrome",
+    "test:edge": "npx playwright test --project=edge",
+    
+    "test:parallel": "cross-env WORKERS=3 npx playwright test",
+    "test:serial": "cross-env WORKERS=1 npx playwright test",
+    "test:no-retries": "cross-env RETRIES=0 npx playwright test",
+    "test:max-retries": "cross-env RETRIES=3 npx playwright test",
+    
+    "test:headed-slow": "cross-env HEADLESS=false SLOW_MO=1000 npx playwright test",
+    "test:headed-debug": "cross-env HEADLESS=false DEBUG=true npx playwright test --debug",
+    
+    "test:record": "cross-env VIDEO_MODE=on npx playwright test",
+    "test:trace-on": "cross-env TRACE_MODE=on npx playwright test",
+    "test:screenshots": "cross-env SCREENSHOT_MODE=on npx playwright test",
+    
+    "env:check": "node -e \"require('dotenv').config(); console.log('Environment variables loaded:', Object.keys(process.env).filter(k => k.startsWith('TEST_')).length)\"",
+    "env:validate": "node -e \"require('dotenv').config(); const required=['BASE_URL','TEST_EMAIL','TEST_PASSWORD']; const missing=required.filter(k => !process.env[k]); if(missing.length) { console.error('Missing:', missing); process.exit(1); } else { console.log('All required env vars present'); }\"",
+    
+    "setup:env": "if not exist .env copy .env.example .env",
+    "setup:complete": "npm install && npm run test:install && npm run setup:env",
+    
+    "lint": "echo 'No linting configured'",
+    "format": "echo 'No formatting configured'",
+    "build": "echo 'No build step required'",
+    
+    "start": "npm run test:dev",
+    "dev": "npm run test:dev",
+    "prod": "npm run test:prod"
+  },
+  "keywords": [
+    "playwright",
+    "automation",
+    "testing",
+    "nopcommerce",
+    "e2e",
+    "test-automation",
+    "javascript",
+    "typescript",
+    "environment-driven",
+    "cross-platform"
+  ],
+  "author": "BS01643",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/nopgadgetautomationtest.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/nopgadgetautomationtest/issues"
+  },
+  "homepage": "https://github.com/yourusername/nopgadgetautomationtest#readme",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
   "devDependencies": {
     "@playwright/test": "^1.55.1",
     "@types/node": "^24.5.2",
-    "dotenv": "^17.2.3"
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3",
+    "rimraf": "^5.0.5"
   },
   "dependencies": {
     "xlsx": "^0.18.5"
+  },
+  "volta": {
+    "node": "18.17.0",
+    "npm": "9.6.7"
   }
 }

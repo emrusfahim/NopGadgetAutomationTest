@@ -1,6 +1,4 @@
 import { Page } from '@playwright/test';
-import XLSX from 'xlsx';
-import { loadXlsxData } from '../../utils/xlsxDataLoader';
 
 export class UserLogin {
     private page: Page;
@@ -23,30 +21,28 @@ export class UserLogin {
         await this.page.goto(this.loginPageUrl);
     }
 
-    async login(testDataPath: string, email: string, worksheet: string): Promise<boolean> {
+    // Login using environment variables only
+    async login(): Promise<boolean> {
         try {
-            // xlsx data loader
-            const data = loadXlsxData(testDataPath, worksheet);
-            // Find where Email is 'admin@yourStore.com' and get the corresponding Password
-            const user = data.find((item) => item.Email === email);
-            if (!user) {
-                throw new Error(`User with email ${email} not found`);
-            }
+            // Get credentials from environment variables
+            const email = process.env.TEST_EMAIL!;
+            const password = process.env.TEST_PASSWORD!;
+
             // Output the email and password to verify
-            console.log("Email: ", user.Email, "      ", "Password: ", user.Password);
+            console.log("Email: ", email, "      ", "Password: ", password);
 
             await this.page.fill(this.emailInput, email);
-            await this.page.fill(this.passwordInput, user.Password);
+            await this.page.fill(this.passwordInput, password);
             await this.page.check(this.rememberMeCheckbox);
             await this.page.click(this.loginButton);
 
-            //await this.page.waitForSelector("//li[@class='user-dropdown dropdown user-account is-loggedin']");
             await this.page.hover(this.userDropdown);
             await this.page.waitForSelector(this.logoutText, { timeout: 5000 });
             console.log('Login successful, Chill!');
 
-            // Save storage state for reuse in tests
-            await this.page.context().storageState({ path: 'storageState.json' });
+            // Save storage state using env variable or default
+            const storageStatePath = process.env.STORAGE_STATE_PATH || 'storageState.json';
+            await this.page.context().storageState({ path: storageStatePath });
 
             return true;
         } catch (error) {
@@ -55,7 +51,3 @@ export class UserLogin {
         }
     }
 }
-
-// To use in a test: Create an instance of UserLogin with a Page object, call login() with email and password.
-// The storage state will be saved to the specified path. In subsequent tests, load the state using:
-// await page.context().addCookies(await fs.readFile('C:\\Users\\BS01643\\Documents\\NopGadgetAutomationTest\\testData\\storageState.json', 'utf8'));

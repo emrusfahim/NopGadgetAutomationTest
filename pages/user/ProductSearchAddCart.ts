@@ -48,16 +48,29 @@ export class ProductSearch {
 
         throw new Error(`Option "${optionText}" not found for ${labelText}. Available: ${options.join(', ')}`);
     }
+    /** Helper: Select color by label text and option using index XPath */
+    private async selectColorByLabel(labelText: string, optionText: string) {
+        // Find the color group by label text
+        const colorGroup = this.page.locator(`dt:has-text("${labelText}") + dd`);
+        await colorGroup.waitFor({ state: 'visible' });
 
-    /** Helper: Select color by visible square title */
-    private async selectColorByLabel(colorName: string) {
-        const colorSpan = this.page.locator(
-            `label:has(span[title="${colorName}"]) span.attribute-square`
-        ).first();
+        // Map color names to index (1-based)
+        const colorIndexMap: Record<string, number> = {
+            'Silver': 1,
+            'Black': 2,
+            'Pink': 3
+        };
 
-        await colorSpan.waitFor({ state: 'visible' });
-        await colorSpan.click({ force: true });
-        console.log(`Color selected: ${colorName}`);
+        const colorIndex = colorIndexMap[optionText.trim()];
+        if (!colorIndex) {
+            throw new Error(`Color "${optionText}" not found in mapping.`);
+        }
+
+        // Select color by index using absolute XPath
+        const colorSquare = this.page.locator(`(//span[@class='attribute-square'])[${colorIndex}]`);
+        await colorSquare.waitFor({ state: 'visible' });
+        await colorSquare.click({ force: true });
+        console.log(`Color selected: ${optionText} (index: ${colorIndex}) under label: ${labelText}`);
     }
 
     /** Main function to search and add product to cart */
@@ -119,7 +132,7 @@ export class ProductSearch {
 
             // Select color
             if (productColor) {
-                await this.selectColorByLabel(productColor);
+                await this.selectColorByLabel("Color", productColor);
             }
 
             // Input quantity
