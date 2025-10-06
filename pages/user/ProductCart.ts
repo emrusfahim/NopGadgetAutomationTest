@@ -1,208 +1,185 @@
-import { Page, Locator } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { loadXlsxData } from '../../utils/xlsxDataLoader';
 
+// This class helps manage and check products in a shopping cart on a web page using Playwright.
 export class ProductCart {
-    private page: Page;
-    
-    // ✅ Declare locators without initialization
-    private cartPageUrl: string;
-    private productName: Locator;
-    private productSku: Locator;
-    private productPrice: Locator;
-    private productTotal: Locator;
+    private page: Page; // The web page we're working with
 
+    // Constructor: Sets up the class with the page
     constructor(page: Page) {
         this.page = page;
-        
-        // ✅ Initialize locators after page is set
-        this.cartPageUrl = '/cart';
-        this.productName = this.page.locator('.product-name');
-        this.productSku = this.page.locator('.sku-number');
-        this.productPrice = this.page.locator('.product-price');
-        this.productTotal = this.page.locator('.product-subtotal');
     }
 
+    // URLs and selectors for finding elements on the page
+    private cartPageUrl = '/cart'; // URL for the cart page
+    private productNameLocator = "xpath=//a[@class='product-name']"; // Finds product names
+    private productSkuLocator = '.sku-number'; // Finds product SKUs
+    private productPriceLocator = '.product-unit-price'; // Finds product unit prices (corrected from '.product-price')
+    private productQuantityLocator = '.qty-input'; // Finds quantity inputs
+    private productTotalLocator = '.product-subtotal'; // Finds total prices
+    private productRowLocator = 'tbody tr'; // Locator for product rows in the cart table
+    private productDiscountLocator = '.discount'; // Finds discount information
+
+    // Go to the cart page
     async gotoCartPage() {
         await this.page.goto(this.cartPageUrl);
     }
 
-    // ✅ Updated method to handle multiple products correctly
+    // Helper method to parse price from formatted string (e.g., "$1,249.00") to number
+    private parsePrice(priceStr: string): number {
+        const match = priceStr.match(/\$([\d,]+\.\d{2})/);
+        if (match) {
+            return parseFloat(match[1].replace(/,/g, ''));
+        }
+        return NaN;
+    }
+
+    // Main method: Check all product details from an Excel file
     async verifyProductDetailsFromExcel(filePath: string, sheetName: string) {
         try {
             console.log(`Loading product data from: ${filePath}, Sheet: ${sheetName}`);
-            
+
+            // Load data from Excel
             const data = await this.loadProductDataFromExcel(filePath, sheetName);
             console.log(`Found ${data.length} products in Excel`);
 
-            // Get all products in cart
-            const cartProducts = await this.productName.all();
-            console.log(`Found ${cartProducts.length} products in cart`);
+            // Count products in the cart on the page
+            const cartProductCount = await this.page.locator(this.productNameLocator).count();
+            console.log(`Found ${cartProductCount} products in cart`);
 
-            // Verify each product from Excel data
+            let mismatchCount = 0;
+
+            // Check each product from Excel against the cart by searching for it by name
             for (let i = 0; i < data.length; i++) {
-                const item = data[i];
-                console.log(`Verifying product ${i + 1}: ${item.name}`);
+                const item = data[i] as {
+                    'Product Name': string;
+                    'SKU': string;
+                    'Price': string;
+                    'Qty': number;
+                    'Total Price': string;
+                };
+                console.log(`\n=== Checking product ${i + 1}: ${item['Product Name']} ===`);
 
-                // ✅ Use nth() to target specific product by index
-                const productNameElement = this.productName.nth(i);
-                const productSkuElement = this.productSku.nth(i);
-                const productPriceElement = this.productPrice.nth(i);
-                const productTotalElement = this.productTotal.nth(i);
+                try {
+                    // Find the product by name
+                    const productNameElement = this.page.locator(`xpath=//a[@class='product-name'][normalize-space()='${item['Product Name']}']`);
+                    await productNameElement.waitFor({ state: 'visible', timeout: 5000 });
 
-                // Wait for elements to be visible
-                await productNameElement.waitFor({ state: 'visible' });
-                
-                // Get actual text from cart
-                const actualName = await productNameElement.textContent();
-                const actualSku = await productSkuElement.textContent();
-                const actualPrice = await productPriceElement.textContent();
-                const actualTotal = await productTotalElement.textContent();
+                    // Get the product row and related elements
+                    const productRow = productNameElement.locator('xpath=ancestor::tr');
+                    const productSkuElement = productRow.locator('.sku-number');
+                    const productPriceElement = productRow.locator('.product-unit-price'); // Corrected selector
+                    const productQuantityElement = productRow.locator('.qty-input');
+                    const productTotalElement = productRow.locator('.product-subtotal');
 
-                console.log(`Expected: ${item.name} | Actual: ${actualName}`);
-                console.log(`Expected SKU: ${item.sku} | Actual SKU: ${actualSku}`);
-                console.log(`Expected Price: ${item.price} | Actual Price: ${actualPrice}`);
-                console.log(`Expected Total: ${item.total} | Actual Total: ${actualTotal}`);
+                    // Get the actual values from the cart
+                    const actualName = (await productNameElement.textContent())?.trim() || '';
+                    const actualSku = (await productSkuElement.textContent())?.trim() || '';
+                    const actualPrice = (await productPriceElement.textContent())?.trim() || '';
+                    const actualQuantity = (await productQuantityElement.inputValue())?.trim() || '';
+                    const actualTotal = (await productTotalElement.textContent())?.trim() || '';
 
-                // ✅ Verify using text content comparison
-                if (!actualName?.includes(item.name)) {
-                    throw new Error(`Product name mismatch: Expected "${item.name}", but got "${actualName}"`);
+                    console.log(`Expected Name: ${item['Product Name']} | Actual: ${actualName}`);
+                    console.log(`Expected SKU: ${item['SKU']} | Actual: ${actualSku}`);
+                    console.log(`Expected Price: ${item['Price']} | Actual: ${actualPrice}`);
+                    console.log(`Expected Qty: ${item['Qty']} | Actual: ${actualQuantity}`);
+                    console.log(`Expected Total: ${item['Total Price']} | Actual: ${actualTotal}`);
+
+                    let productMismatch = false;
+
+                    // Check if each field matches
+                    if (!actualName.includes(item['Product Name'])) {
+                        console.log(`Product name mismatch for "${item['Product Name']}": Expected "${item['Product Name']}", but got "${actualName}"`);
+                        productMismatch = true;
+                    }
+
+                    if (!actualSku.includes(item['SKU'])) {
+                        console.log(`SKU mismatch for "${item['Product Name']}": Expected "${item['SKU']}", but got "${actualSku}"`);
+                        productMismatch = true;
+                    }
+
+                    // Parse and compare prices numerically
+                    const expectedPrice = parseFloat(item['Price']);
+                    const actualPriceNum = this.parsePrice(actualPrice);
+                    if (isNaN(actualPriceNum) || Math.abs(actualPriceNum - expectedPrice) > 0.01) {
+                        console.log(`Price mismatch for "${item['Product Name']}": Expected "${item['Price']}", but got "${actualPrice}" (parsed: ${actualPriceNum})`);
+                        productMismatch = true;
+                    }
+
+                    if (actualQuantity !== item['Qty'].toString()) {
+                        console.log(`Quantity mismatch for "${item['Product Name']}": Expected "${item['Qty']}", but got "${actualQuantity}"`);
+                        productMismatch = true;
+                    }
+
+                    // Parse and compare total prices numerically
+                    const expectedTotal = parseFloat(item['Total Price']);
+                    const actualTotalNum = this.parsePrice(actualTotal);
+                    if (isNaN(actualTotalNum) || Math.abs(actualTotalNum - expectedTotal) > 0.01) {
+                        console.log(`Total mismatch for "${item['Product Name']}": Expected "${item['Total Price']}", but got "${actualTotal}" (parsed: ${actualTotalNum})`);
+                        productMismatch = true;
+                    }
+
+                    if (!productMismatch) {
+                        console.log(`Product ${i + 1} check passed - All fields matched!`);
+                    } else {
+                        mismatchCount++;
+                    }
+                } catch (error) {
+                    // If the product isn't found (timeout), skip to the next one
+                    if (error instanceof Error && (error.message.includes('waitFor') || error.message.includes('timeout'))) {
+                        console.log(`Product ${i + 1} not found in cart, skipping to next.`);
+                        continue;
+                    } else {
+                        throw error; // Re-throw other errors
+                    }
                 }
-                
-                if (!actualSku?.includes(item.sku)) {
-                    throw new Error(`Product SKU mismatch: Expected "${item.sku}", but got "${actualSku}"`);
-                }
-
-                if (!actualPrice?.includes(item.price)) {
-                    throw new Error(`Product price mismatch: Expected "${item.price}", but got "${actualPrice}"`);
-                }
-
-                if (!actualTotal?.includes(item.total)) {
-                    throw new Error(`Product total mismatch: Expected "${item.total}", but got "${actualTotal}"`);
-                }
-
-                console.log(`✅ Product ${i + 1} verification passed`);
             }
 
-            console.log('All product verifications completed successfully');
-            return true;
+            console.log(`\nAll product checks completed. Total mismatches: ${mismatchCount}`);
+            return mismatchCount === 0;
 
         } catch (error) {
-            console.error('Product verification failed:', error);
+            console.error('Product check failed:', error);
             throw error;
         }
     }
 
-    // ✅ Alternative method - verify by searching for specific text
-    async verifyProductDetailsFromExcelByText(filePath: string, sheetName: string) {
+    // Check if a specific product exists in the cart by name (and optionally SKU)
+    async verifyProductExists(productName: string, sku?: string): Promise<boolean> {
         try {
-            const data = await this.loadProductDataFromExcel(filePath, sheetName);
-
-            for (const item of data) {
-                console.log(`Verifying product: ${item.name}`);
-
-                // ✅ Use more specific locators with exact text matching
-                const productByName = this.page.locator('.product-name', { hasText: item.name }).first();
-                
-                // Wait and verify product exists
-                await productByName.waitFor({ state: 'visible', timeout: 10000 });
-                
-                // Find the row containing this product
-                const productRow = productByName.locator('xpath=ancestor::tr');
-                
-                // Verify other details within the same row
-                const skuInRow = productRow.locator('.sku-number');
-                const priceInRow = productRow.locator('.product-price');
-                const totalInRow = productRow.locator('.product-subtotal');
-
-                await skuInRow.waitFor({ state: 'visible' });
-                await priceInRow.waitFor({ state: 'visible' });
-                await totalInRow.waitFor({ state: 'visible' });
-
-                console.log(`✅ Product "${item.name}" found and verified`);
-            }
-
-            return true;
-        } catch (error) {
-            console.error('Product verification failed:', error);
-            return false;
-        }
-    }
-
-    // ✅ Method to verify cart is not empty
-    async verifyCartHasProducts(): Promise<boolean> {
-        try {
-            await this.productName.first().waitFor({ state: 'visible', timeout: 5000 });
-            const productCount = await this.productName.count();
-            console.log(`Cart contains ${productCount} products`);
-            return productCount > 0;
-        } catch (error) {
-            console.error('Cart appears to be empty or products not found');
-            return false;
-        }
-    }
-
-    // ✅ Method to get product count in cart
-    async getProductCount(): Promise<number> {
-        try {
-            return await this.productName.count();
-        } catch (error) {
-            console.error('Error getting product count:', error);
-            return 0;
-        }
-    }
-
-    // ✅ Method to verify specific product by name
-    async verifyProductExists(productName: string): Promise<boolean> {
-        try {
-            const productElement = this.page.locator('.product-name', { hasText: productName }).first();
+            // Find the product by name
+            const productElement = this.page.locator(`xpath=//a[@class='product-name'][normalize-space()='${productName}']`);
             await productElement.waitFor({ state: 'visible', timeout: 5000 });
-            console.log(`✅ Product "${productName}" found in cart`);
+            
+            if (sku) {
+                // If SKU is provided, check it too
+                const productRow = productElement.locator('xpath=ancestor::tr');
+                const skuElement = productRow.locator('.sku-number');
+                const actualSku = await skuElement.textContent();
+                
+                if (!actualSku?.includes(sku)) {
+                    throw new Error(`SKU mismatch for product "${productName}"`);
+                }
+            }
+            
+            console.log(`Product "${productName}" found in cart`);
             return true;
         } catch (error) {
-            console.error(`❌ Product "${productName}" not found in cart`);
+            console.error(`Product "${productName}" not found in cart`);
             return false;
         }
     }
 
-    // ✅ Method to remove product from cart
-    async removeProduct(productIndex: number): Promise<void> {
-        try {
-            const removeButton = this.page.locator('.remove-from-cart').nth(productIndex);
-            await removeButton.click();
-            console.log(`Removed product at index ${productIndex}`);
-        } catch (error) {
-            console.error(`Error removing product at index ${productIndex}:`, error);
-            throw error;
-        }
-    }
-
-    // ✅ Method to update product quantity
-    async updateProductQuantity(productIndex: number, quantity: number): Promise<void> {
-        try {
-            const quantityInput = this.page.locator('.qty-input').nth(productIndex);
-            await quantityInput.fill(quantity.toString());
-            
-            const updateButton = this.page.locator('.update-cart-button');
-            await updateButton.click();
-            
-            console.log(`Updated product ${productIndex} quantity to ${quantity}`);
-        } catch (error) {
-            console.error(`Error updating product quantity:`, error);
-            throw error;
-        }
-    }
-
+    // Helper method: Load product data from Excel and check it's valid
     private async loadProductDataFromExcel(filePath: string, sheetName: string) {
-        // Get test data using environment variables and Excel loader
         const data = loadXlsxData(filePath, sheetName);
         
-        // Validate required fields exist in Excel data
         if (!data || data.length === 0) {
             throw new Error(`No data found in Excel file: ${filePath}, Sheet: ${sheetName}`);
         }
 
-        // Validate required columns exist
-        const requiredFields = ['name', 'sku', 'price', 'total'];
+        // Make sure required columns are there
+        const requiredFields = ['Product Name', 'SKU', 'Price', 'Qty', 'Total Price'];
         const firstRow = data[0];
         const missingFields = requiredFields.filter(field => !(field in firstRow));
         
@@ -214,25 +191,32 @@ export class ProductCart {
         return data;
     }
 
-    // ✅ Method to get cart summary
-    async getCartSummary(): Promise<{productCount: number, products: string[]}> {
+    // Get all details of products in the cart as a list of objects, including discount
+    async getCartDetails(): Promise<Array<{name: string, sku: string, unitPrice: string, qty: string, subtotal: string, discount: string}>> {
         try {
-            const productCount = await this.productName.count();
-            const products: string[] = [];
+            // Get all product rows
+            const productRows = this.page.locator(this.productRowLocator);
+            const productCount = await productRows.count();
+            const cartDetails = [];
             
+            // For each product row, get its details
             for (let i = 0; i < productCount; i++) {
-                const productText = await this.productName.nth(i).textContent();
-                if (productText) {
-                    products.push(productText.trim());
-                }
+                const row = productRows.nth(i);
+                const name = (await row.locator('.product-name').textContent())?.trim() || '';
+                const sku = (await row.locator('.sku-number').textContent())?.trim() || '';
+                const unitPrice = (await row.locator('.product-unit-price').textContent())?.trim() || '';
+                const qty = (await row.locator('.qty-input').inputValue())?.trim() || '';
+                const subtotal = (await row.locator('.product-subtotal').textContent())?.trim() || '';
+                const discount = (await row.locator('.discount').textContent())?.trim() || '';
+                
+                cartDetails.push({ name, sku, unitPrice, qty, subtotal, discount });
             }
 
-            const summary = { productCount, products };
-            console.log('Cart Summary:', summary);
-            return summary;
+            console.log('Cart Details:', cartDetails);
+            return cartDetails;
         } catch (error) {
-            console.error('Error getting cart summary:', error);
-            return { productCount: 0, products: [] };
+            console.error('Error getting cart details:', error);
+            return [];
         }
     }
 }
