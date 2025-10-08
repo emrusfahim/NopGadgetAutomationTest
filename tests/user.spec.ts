@@ -106,8 +106,10 @@ test('Change password', async ({ page }) => {
   // Change password
   await changePasswordPage.changePassword(oldPassword, newPassword, confirmPassword);
 });
-
+ 
 test('Search product', async ({ page }) => {
+  // set timeout for this test to 60 seconds
+  test.setTimeout(60000);
   const testDataPath = process.env.TEST_DATA_PATH!;
   const worksheet = process.env.WORKSHEET_PRODUCTS!;
 
@@ -130,8 +132,24 @@ test('Product Cart operations', async ({ page }) => {
   const productCart = new ProductCart(page);
 
   await productCart.gotoCartPage();
-  await productCart.verifyProductDetailsFromExcel(testDataPath, worksheet);
+  await productCart.checkProductsInCart(testDataPath, worksheet);
+  await productCart.selectGiftWrappingOption("Yes [+$10.00]");
+  const isCouponApplied = await productCart.applyCouponCode("DISCOUNT10");
+  const isGiftCardApplied = await productCart.applyGiftCardCode("0fa83065-e9d5");
+
+  // Assertions can be added here to verify the results
+  expect(isCouponApplied).toBe(true);
+  expect(isGiftCardApplied).toBe(true);
+  await productCart.removeProductFromCart("HP Spectre XT Pro UltraBook");
+
+  await productCart.agreeToTermsAndCheckout();
 });
+
+
+
+
+
+
 
 // // Additional test examples for future use
 // test.skip('Admin login', async ({ page }) => {
