@@ -25,7 +25,7 @@ export class ProductCart {
     private applyGiftCardButtonLocator = 'button#applygiftcardcouponcode'; // Button to apply gift card codes
     private checkoutButtonLocator = 'button#checkout'; // Button to proceed to checkout
     private termsOfServiceCheckboxLocator = 'label:has-text("I agree with the terms of service and I adhere to ")'; // Checkbox for agreeing to terms of service
-
+    private emptyCartLocator = "xpath=//div[@class='no-data' and contains(text(),'Your Shopping Cart is empty!')]"; // Locator for empty cart message
 
     // Go to the cart page
     async gotoCartPage() {
@@ -74,16 +74,47 @@ export class ProductCart {
         console.log('Total products in cart:', await this.page.locator(this.productRowLocator).count());
     }
 
-    async removeProductFromCart(productName: string) {
+    async removeProductFromCart(productName?: string) {
+        // console.log(productName);
+        console.log(`Removing product from cart: ${productName || 'All products'}`);
         const productRow = this.page.locator(`xpath=//a[@class='product-name'][normalize-space()='${productName}']`);
         const isProductInCart = await productRow.count() > 0;
 
-        if (isProductInCart) {
-            const row = productRow.first().locator('..').locator('..');
-            await row.locator('xpath=.//button[@name="updatecart"]').click();
-            console.log(`Removed product from cart: ${productName}`);
-        } else {
-            console.warn(`Product not found in cart: ${productName}`);
+        if (productName) {
+            if (isProductInCart) { // Remove specific product
+                const row = productRow.first().locator('..').locator('..');
+                await row.locator('xpath=.//button[@name="updatecart"]').click();
+                console.log(`Removed product from cart: ${productName}`);
+            } else {
+                console.warn(`Product not found in cart: ${productName}`);
+            }
+        } else { // Remove all products
+            let cartItemCount = await this.page.locator(this.productRowLocator).count();
+            while (cartItemCount > 0) {
+                const firstRow = this.page.locator(this.productRowLocator).first();
+                // console log removed product name
+                const removedProductName = await firstRow.locator(this.productNameLocator).innerText();
+                console.log(`Removed product from cart: ${removedProductName}`);
+                
+                await firstRow.locator('xpath=.//button[@name="updatecart"]').click();
+                //await this.page.waitForTimeout(1000); // Wait a bit for the cart to update
+                cartItemCount = await this.page.locator(this.productRowLocator).count();
+                console.log(`Products left in cart: ${cartItemCount}`);
+
+                if (cartItemCount === 0) {
+                    // await this.page.waitForLoadState('networkidle');
+                    // Check for "Your Shopping Cart is empty!" message at //div[@class='no-data']
+                    await this.page.reload();
+                    const emptyCartLocator = this.page.locator(this.emptyCartLocator);
+                    const isCartEmpty = await emptyCartLocator.isVisible();
+                    if (isCartEmpty) {
+                        const emptyCartText = await emptyCartLocator.innerText();
+                        console.log(`Cart cleared: ${emptyCartText}`);
+                    } else {
+                        console.log('Cart is not empty');
+                    }
+                }
+            }
         }
     }
 

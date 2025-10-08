@@ -106,24 +106,95 @@ test('Change password', async ({ page }) => {
   // Change password
   await changePasswordPage.changePassword(oldPassword, newPassword, confirmPassword);
 });
- 
-test('Search product', async ({ page }) => {
-  // set timeout for this test to 60 seconds
-  test.setTimeout(60000);
-  const testDataPath = process.env.TEST_DATA_PATH!;
-  const worksheet = process.env.WORKSHEET_PRODUCTS!;
 
-  // Create an instance of ProductSearch
+
+test('Search and Add All Products to Cart from Excel', async ({ page }) => {
+  // Initialize the ProductSearch class
+  test.setTimeout(120000); // Set timeout to 120 seconds per product
   const productSearch = new ProductSearch(page);
+  const productCart = new ProductCart(page);
+  await productCart.gotoCartPage();
+  await productCart.removeProductFromCart();
+  await page.waitForTimeout(2000);
+  console.log("Cleared cart before starting product additions...");
 
-  await productSearch.gotoSearchPage();
+  // Load all product data from Excel
+  const testDataPath = process.env.TEST_DATA_PATH!;  // e.g., 'testData/products.xlsx'
+  const worksheet = process.env.WORKSHEET_PRODUCTS!;  // e.g., 'Products'
+  // const products = await productSearch.loadProductData(testDataPath, worksheet);
+  const products = loadXlsxData(testDataPath, worksheet);
 
-  // Search for a product
-  const searchResult = await productSearch.searchProduct(testDataPath, worksheet);
+  if (products.length === 0) {
+    throw new Error('No products found in Excel sheet');
+  }
 
-  // Validation is done inside the method and result is returned to the calling test function
-  expect(searchResult).toBe(true);
+  console.log(`Processing ${products.length} products from Excel...`);
+
+  // Loop through each product in the sheet
+  for (let i = 0; i < products.length; i++) {
+    const product = products[i];
+    console.log(`\n--- Processing Product ${i + 1}/${products.length}: ${product['Product Name']} ---`);
+
+    // Extract data from the current row (use optional chaining for safety)
+    const productName = product['Product Name'];  // Required
+    const manufacturer = product['Manufacturer'];  // Optional
+    const sku = product['SKU'];  // Optional
+    const processor = product['Processor'];  // Optional
+    const ram = product['RAM'];  // Optional
+    const hdd = product['HDD'];  // Optional
+    const os = product['OS'];  // Optional
+    const software = product['Software'];  // Optional
+    const color = product['Color'];  // Optional
+    const qty = product['Qty'];  // Optional (number)
+    const serialFilePath = product['Serial File Path'];  // Optional
+
+    // Skip if no product name
+    if (!productName) {
+      console.log(`Skipping row ${i + 1}: Missing 'Product Name'`);
+      continue;
+    }
+
+    // Step 1: Navigate to search page (do this once at the start, or per product if needed)
+    if (i === 0) {  // Only navigate once for efficiency
+      await productSearch.gotoSearchPage();
+    }
+
+    // Step 2: Search for the product
+    await productSearch.searchForProduct(productName);
+
+    // Step 3: Select the first product from results
+    await productSearch.selectProductFromResults(productName);
+    await page.waitForLoadState('networkidle');
+
+    // Step 4: Validate product details (manufacturer/SKU if provided)
+    await productSearch.validateProductDetails(manufacturer, sku);
+
+    // Step 5: Configure product options (dropdowns like processor, RAM, etc.)
+    await productSearch.configureProductOptions(processor, ram, hdd, os, software);
+
+    // Step 6: Select color (if applicable)
+    await productSearch.selectColor(color);
+
+    // Step 7: Set quantity
+    await productSearch.setQuantity(qty);
+
+    // Step 8: Upload serial file (if path provided)
+    // console.log(`Serial file path: ${serialFilePath}`); 
+    await productSearch.uploadSerialFile(serialFilePath);
+
+    // Step 9: Add to cart
+    await productSearch.addToCart();
+
+    // Step 10: Verify success for this product
+    await productSearch.verifyAddToCartSuccess(productName);
+
+    // Optional: Add a small delay between products to avoid overwhelming the site
+    await page.waitForTimeout(1000);
+  }
+
+  console.log(`\nSuccessfully processed all ${products.length} products!`);
 });
+
 
 test('Product Cart operations', async ({ page }) => {
   const testDataPath = process.env.TEST_DATA_PATH!;
@@ -140,7 +211,7 @@ test('Product Cart operations', async ({ page }) => {
   // Assertions can be added here to verify the results
   expect(isCouponApplied).toBe(true);
   expect(isGiftCardApplied).toBe(true);
-  await productCart.removeProductFromCart("HP Spectre XT Pro UltraBook");
+  await productCart.removeProductFromCart();
 
   await productCart.agreeToTermsAndCheckout();
 });

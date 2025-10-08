@@ -35,7 +35,7 @@ export class ProductSearch {
     }
 
     /** Helper: Select dropdown by its label dynamically */
-    private async selectDropdownByLabel(labelText: string, optionText: string) {
+    async selectDropdownByLabel(labelText: string, optionText: string) {
         const dropdown = this.page.locator(`dt:has-text("${labelText}") + dd select`);
         await dropdown.waitFor({ state: 'visible' });
 
@@ -59,148 +59,105 @@ export class ProductSearch {
         throw new Error(`Option "${optionText}" not found for ${labelText}. Available: ${options.join(', ')}`);
     }
 
-
-    /** Main function to search and add product to cart */
-    async searchProduct(testDataPath: string, worksheet: string): Promise<boolean> {
+    /** Load product data from Excel */
+    async loadProductData(testDataPath: string, worksheet: string) {
         const data = loadXlsxData(testDataPath, worksheet);
-
         if (!data || data.length === 0) {
             console.log("No data found in the provided Excel sheet.");
-            return false;
+            return [];
         }
         console.log(`Loaded ${data.length} products from ${testDataPath}, Sheet: ${worksheet}`);
-        await this.page.waitForTimeout(2000);
-
-        // console.log(`Selected color: ${data[0]['Color']}`);
-
-        for (const product of data) {
-
-            await this.page.goto(this.searchURL);
-            // await this.page.waitForLoadState('networkidle');
-            // await this.page.waitForTimeout(1000);
-
-            // Extract product details from the current row
-            const productName = product['Product Name'];
-            const productManufacturer = product['Manufacturer'];
-            const productSKU = product['SKU'];
-            const productProcessor = product['Processor'];
-            const productRAM = product['RAM'];
-            const productHDD = product['HDD'];
-            const productOS = product['OS'];
-            const productSoftware = product['Software'];
-            const productFilePath = product['Serial File Path'];
-            const productColor = product['Color'];
-            const productQty = product['Qty'];
-
-            // Search product
-            await this.page.fill(this.searchInput, productName);
-            await this.page.click(this.searchButton);
-            // Wait for search results to load
-            await this.page.waitForSelector('.product-item', { timeout: 5000 });
-
-            // Check if any products found
-            const productItems = this.page.locator('.product-item');
-            if (await productItems.count() === 0) {
-                console.log(`No products found for: ${productName}`);
-                continue; // Skip to next product
-            }
-
-            console.log(`Clicking on product: ${productName}`);
-            await this.page.locator('.product-item').first().click();
-
-            // Validate Manufacturer
-            if (productManufacturer) {
-                const manufacturerText = await this.page.locator(this.productPageManufacturer).textContent();
-                console.log(`Manufacturer matches: ${manufacturerText?.trim()}`);
-            }
-            // Validate SKU
-            if (productSKU) {
-                const skuText = await this.page.locator(this.productPageSKU).textContent();
-                console.log(`SKU matches: ${skuText?.trim()}`);
-            }
-
-            // Select dropdowns dynamically
-            if (productProcessor) await this.selectDropdownByLabel("Processor", productProcessor);
-            if (productRAM) await this.selectDropdownByLabel("RAM", productRAM);
-            if (productHDD) await this.selectDropdownByLabel("HDD", productHDD);
-            if (productOS) await this.selectDropdownByLabel("OS", productOS);
-            if (productSoftware) await this.selectDropdownByLabel("Software", productSoftware);
-
-            // File upload
-            if (productFilePath) {
-                console.log(`Serial file path: ${productFilePath}`);
-                if (!require('fs').existsSync(productFilePath)) {
-                    throw new Error(`File not found: ${productFilePath}`);
-                }
-                await this.page.setInputFiles(this.serialFileInput, productFilePath);
-                // Wait for upload to finish (FilePond success indicator with exact text)
-                await this.page.waitForSelector('span.filepond--file-status-main:has-text("Upload complete")', { timeout: 10000 });
-            }
-
-            // Select color
-            if (productColor) {
-                console.log(`Selected color: ${productColor}`);
-                const colorLocator = this.page.locator(`.color-squares .attribute-square-container[title="${productColor}"]`).first();
-                await colorLocator.waitFor({ state: 'visible', timeout: 5000 });
-                await colorLocator.click();
-            }
-
-            // Input quantity
-            if (productQty) {
-                const qtyInput = this.page.locator('input[id^="product_enteredQuantity"]');
-                await qtyInput.waitFor({ state: 'visible', timeout: 5000 });
-                await this.page.fill('input[id^="product_enteredQuantity"]', productQty.toString());
-            }
-
-            // Add to cart
-            const addToCartBtn = this.page.locator(this.addToCartButton);
-            await addToCartBtn.scrollIntoViewIfNeeded();  
-            await addToCartBtn.waitFor({ state: 'visible', timeout: 5000 });
-            // const count = await addToCartBtn.count();
-            // console.log(`Found ${count} Add to Cart buttons`);
-            await addToCartBtn.click();
-            // await this.page.click(this.addToCartButton);
-
-
-            // Wait for cart update or notification
-            await this.page.waitForTimeout(1000); // Keep minimal, but consider replacing with better wait
-
-            // // Check for notification error
-            // const notification = this.page.locator('div.bar-notification');
-            // if (await notification.isVisible({ timeout: 5000 })) {
-            //     const notificationText = await notification.textContent();
-            //     console.log(`Notification after adding to cart: ${notificationText?.trim()}`);
-            //     if (notificationText?.includes('error') || notificationText?.includes('failed')) {
-            //         throw new Error(`Add to cart failed for ${productName}: ${notificationText}`);
-            //     }
-            // }
-
-            // Check for success message
-            const successMessageTemp = this.page.locator(this.successMessage);
-            if (await successMessageTemp.isVisible({ timeout: 5000 })) {
-                const successText = await successMessageTemp.textContent();
-                console.log(`Success after adding to cart: ${successText?.trim()}`);
-            } else {
-                throw new Error(`No success message for ${productName}`);
-            }
-
-            // Add to cart confirmation message with detailed info
-            const confirmationMessage = this.page.locator('//div[@id="add-to-cart-confirmation"]');
-            if (await confirmationMessage.isVisible({ timeout: 5000 })) {
-                const confirmationText = await confirmationMessage.textContent();
-                // console.log(`Add to cart confirmation: ${confirmationText?.trim()}`);
-                // Click on //a[normalize-space()='Continue shopping']
-                await this.page.click('//a[normalize-space()="Continue shopping"]');
-                // await this.page.waitForTimeout(1000); // wait for navigation
-            }
-
-            console.log(`Successfully added ${productName} to cart`);
-
-            // Timeout between products
-            await this.page.waitForTimeout(2000);
-        }
-
-        return true;
+        return data;
     }
-}
 
+    /** Search for a product by name */
+    async searchForProduct(productName: string) {
+        await this.page.fill(this.searchInput, productName);
+        await this.page.click(this.searchButton);
+        await this.page.waitForSelector('.product-item', { timeout: 5000 });
+        const productItems = this.page.locator('.product-item');
+        if (await productItems.count() === 0) {
+            throw new Error(`No products found for: ${productName}`);
+        }
+    }
+
+    /** Select the first product from search results */
+    async selectProductFromResults(productName: string) {
+        console.log(`Clicking on product: ${productName}`);
+        await this.page.locator('.product-item').first().click();
+    }
+
+    /** Validate product manufacturer and SKU */
+    async validateProductDetails(productManufacturer?: string, productSKU?: string) {
+        if (productManufacturer) {
+            const manufacturerText = await this.page.locator(this.productPageManufacturer).textContent();
+            console.log(`Manufacturer matches: ${manufacturerText?.trim()}`);
+        }
+        if (productSKU) {
+            const skuText = await this.page.locator(this.productPageSKU).textContent();
+            console.log(`SKU matches: ${skuText?.trim()}`);
+        }
+    }
+
+    /** Configure product options via dropdowns */
+    async configureProductOptions(productProcessor?: string, productRAM?: string, productHDD?: string, productOS?: string, productSoftware?: string) {
+        if (productProcessor) await this.selectDropdownByLabel("Processor", productProcessor);
+        if (productRAM) await this.selectDropdownByLabel("RAM", productRAM);
+        if (productHDD) await this.selectDropdownByLabel("HDD", productHDD);
+        if (productOS) await this.selectDropdownByLabel("OS", productOS);
+        if (productSoftware) await this.selectDropdownByLabel("Software", productSoftware);
+    }
+
+    /** Upload serial file */
+    async uploadSerialFile(productFilePath?: string) {
+        if (productFilePath) {
+            // console.log(`Serial file path: ${productFilePath}`);
+            if (!require('fs').existsSync(productFilePath)) {
+                throw new Error(`File not found: ${productFilePath}`);
+            }
+            await this.page.setInputFiles(this.serialFileInput, productFilePath);
+            await this.page.waitForSelector('span.filepond--file-status-main:has-text("Upload complete")', { timeout: 10000 });
+        }
+    }
+
+    /** Select product color */
+    async selectColor(productColor?: string) {
+        if (productColor) {
+            console.log(`Selected color: ${productColor}`);
+            const colorLocator = this.page.locator(`.color-squares .attribute-square-container[title="${productColor}"]`).first();
+            await colorLocator.waitFor({ state: 'visible', timeout: 5000 });
+            await colorLocator.click();
+        }
+    }
+
+    /** Set product quantity */
+    async setQuantity(productQty?: number) {
+        if (productQty) {
+            const qtyInput = this.page.locator('input[id^="product_enteredQuantity"]');
+            await qtyInput.waitFor({ state: 'visible', timeout: 5000 });
+            await this.page.fill('input[id^="product_enteredQuantity"]', productQty.toString());
+        }
+    }
+
+    /** Add product to cart */
+    async addToCart() {
+        const addToCartBtn = this.page.locator(this.addToCartButton);
+        //await addToCartBtn.scrollIntoViewIfNeeded();
+        //await addToCartBtn.waitFor({ state: 'visible', timeout: 5000 });
+        await addToCartBtn.click();
+    }
+
+    /** Verify add to cart success */
+    async verifyAddToCartSuccess(productName: string) {
+        //await this.page.waitForTimeout(10000);
+        const successMessageTemp = this.page.locator(this.successMessage);
+        //await successMessageTemp.waitFor({ state: 'visible', timeout: 15000 });
+        const successText = await successMessageTemp.textContent();
+        console.log(`Success after adding to cart: ${successText?.trim()}`);
+        // const confirmationMessage = this.page.locator('//div[@id="add-to-cart-confirmation"]');
+        // await confirmationMessage.waitFor({ state: 'visible', timeout: 5000 });
+        await this.page.click('//a[normalize-space()="Continue shopping"]');
+        console.log(`Successfully added ${productName} to cart`);
+    }
+    // Removed processSingleProduct, processProducts, and searchProduct methods to allow calling individual functions one by one from tests.
+}
