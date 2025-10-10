@@ -13,6 +13,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  */
 export default defineConfig({
 
+  // timeout: 120000,  // 2 minutes for each test
   /* Start StorageState */
   globalSetup: require.resolve('./global-setup'),
   // use: {
@@ -51,7 +52,7 @@ export default defineConfig({
 
     {
       name: 'chromium',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         storageState: process.env.STORAGE_STATE_PATH!
       },

@@ -95,7 +95,7 @@ export class ProductCart {
                 // console log removed product name
                 const removedProductName = await firstRow.locator(this.productNameLocator).innerText();
                 console.log(`Removed product from cart: ${removedProductName}`);
-                
+
                 await firstRow.locator('xpath=.//button[@name="updatecart"]').click();
                 //await this.page.waitForTimeout(1000); // Wait a bit for the cart to update
                 cartItemCount = await this.page.locator(this.productRowLocator).count();
@@ -145,7 +145,7 @@ export class ProductCart {
         return isGiftCardApplied;
     }
 
-    async agreeToTermsAndCheckout() {
+    async agreeToTerms() {
         await this.page.locator(this.termsOfServiceCheckboxLocator).check();
         console.log('Agreed to terms of service');
         // await this.page.locator(this.checkoutButtonLocator).click();
@@ -153,4 +153,54 @@ export class ProductCart {
         await this.page.waitForTimeout(2000); // Just to observe the state before checkout, can be removed
     }
 
+    async proceedToCheckout() {
+        await this.page.locator(this.checkoutButtonLocator).click();
+        console.log('Proceeded to checkout');
+        // await this.page.waitForLoadState('networkidle');
+    }
+
+
+
+    
+
+    // One Page Checkout will be defined here
+    async clickBillingContinue() {
+        // Click the Continue button in the Billing Address section
+        await this.page.click('button[name="save"]');
+        console.log('Clicked Billing Address Continue button');
+        await this.page.waitForLoadState('networkidle');
+    }
+
+    async clickShippingContinue() {
+        // Click the Continue button in the Shipping Address section
+        await this.page.click('button[name="save"]');
+        console.log('Clicked Shipping Address Continue button');
+        await this.page.waitForLoadState('networkidle');
+    }
+
+    async clickShippingMethodContinue() {
+        // Click the Continue button in the Shipping Method section
+        await this.page.click('button[name="save"]');
+        console.log('Clicked Shipping Method Continue button');
+        await this.page.waitForLoadState('networkidle');
+    }
+
+    async clickPaymentMethodContinue() {
+        // Click the Continue button in the Payment Method section
+        await this.page.click('button[name="save"]');
+        console.log('Clicked Payment Method Continue button');
+        await this.page.waitForLoadState('networkidle');
+    }
+    async clickPaymentInfoContinue() {
+        // Click the Continue button in the Payment Information section
+        await this.page.click('button[name="save"]');
+        console.log('Clicked Payment Information Continue button');
+        await this.page.waitForLoadState('networkidle');
+    }
+    async confirmOrder() {
+        // Click the Confirm button to place the order
+        await this.page.click('button[name="confirm"]');
+        console.log('Order confirmed');
+        await this.page.waitForLoadState('networkidle');
+    }
 }

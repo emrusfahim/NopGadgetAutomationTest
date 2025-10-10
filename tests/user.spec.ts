@@ -5,7 +5,8 @@ import { UserProfileManagement } from '../pages/user/UserProfileManagement';
 import { AddressManagement } from '../pages/user/AddressManagement';
 import { ChangePasswordPage } from '../pages/user/ChangePassword';
 import { ProductSearch } from '../pages/user/ProductSearchAddCart';
-import { ProductCart } from '../pages/user/ProductCart';
+import { ProductCart } from '../pages/user/ProductCartCheckout';
+import { OrdersPage } from '../pages/user/Orders';
 
 // Environment validation helper
 function validateRequiredEnvVars(vars: string[]) {
@@ -155,9 +156,9 @@ test('Search and Add All Products to Cart from Excel', async ({ page }) => {
     }
 
     // Step 1: Navigate to search page (do this once at the start, or per product if needed)
-    if (i === 0) {  // Only navigate once for efficiency
-      await productSearch.gotoSearchPage();
-    }
+    // if (i === 0) {  // Only navigate once for efficiency
+    //   await productSearch.gotoSearchPage();
+    // }
 
     // Step 2: Search for the product
     await productSearch.searchForProduct(productName);
@@ -192,6 +193,8 @@ test('Search and Add All Products to Cart from Excel', async ({ page }) => {
     await page.waitForTimeout(1000);
   }
 
+  await productCart.gotoCartPage();
+
   console.log(`\nSuccessfully processed all ${products.length} products!`);
 });
 
@@ -211,9 +214,72 @@ test('Product Cart operations', async ({ page }) => {
   // Assertions can be added here to verify the results
   expect(isCouponApplied).toBe(true);
   expect(isGiftCardApplied).toBe(true);
-  await productCart.removeProductFromCart();
+  await productCart.removeProductFromCart("Bose Home Speaker 500");
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await productCart.agreeToTerms();
+  await productCart.proceedToCheckout();
 
-  await productCart.agreeToTermsAndCheckout();
+  // One Page Checkout will be automated here
+
+
+});
+
+test('Click Details button for specific order number', async ({ page }) => {
+  const ordersPage = new OrdersPage(page);
+
+  const targetOrderNumber = '34';
+
+  // Navigate to the orders page
+  await ordersPage.navigateToOrders(); // <-- replace with your URL if needed
+
+  // Find the order item containing the correct order number
+  const orderItem = await ordersPage.findOrderItem(targetOrderNumber);
+
+  // Click the Details button inside that specific order item
+  await ordersPage.clickDetailsButton(orderItem);
+
+  // Assert navigation or result after clicking
+  await ordersPage.assertOrderDetailsUrl(targetOrderNumber);
+
+  // Assert Order Overview
+  await ordersPage.assertOrderOverview('34', 'Wednesday, October 8, 2025', /Pending/, '$8,346.99');
+
+  // Assert Billing Address
+  await ordersPage.assertBillingAddress(
+    'John Doe',
+    'john@jmail.com',
+    '555-1234',
+    '555-5678',
+    'Acme Corp.',
+    'United States of America',
+    'New York',
+    '123 Main St',
+    'Apt 4B',
+    '10001'
+  );
+
+  // Assert Payment Info
+  await ordersPage.assertPaymentInfo('Check / Money Order', 'Pending');
+
+  // Assert Pickup Point (Shipping Info Section)
+  await ordersPage.assertPickupPoint('21 West 52nd Street', 'New York,New York,10021', 'United States of America');
+
+  // Assert Shipping Method
+  await ordersPage.assertShippingMethod('Pickup at New York store', 'Not yet shipped');
+
+  // Assert Product List
+  const products = [
+    { sku: 'COMP_CUST', name: 'Microsoft Surface Pro 9', price: '$1,475.00', qty: '1', subtotal: '$1,475.00' },
+    { sku: 'COMP-45', name: 'Bose QuietComfort 45', price: '$1,070.00', qty: '2', subtotal: '$2,140.00' },
+    { sku: 'COMP-SM0', name: 'Havit HV-M9016 Pro 1.69 Full Touch', price: '$55.00', qty: '3', subtotal: '$165.00' },
+    { sku: 'DS_VA3_PC', name: 'Digital Storm VANQUISH Custom Performance PC', price: '$540.00', qty: '6', subtotal: '$3,240.00' },
+    { sku: 'HP_SPX_UB', name: 'HP Spectre XT Pro UltraBook', price: '$1,340.00', qty: '1', subtotal: '$1,340.00' }
+  ];
+  await ordersPage.assertProductList(products);
+
+  // Assert Totals
+  await ordersPage.assertTotals('$8,370.00', '$1.99', '$0.00', '($25.00)', '$8,346.99');
 });
 
 
